@@ -1,17 +1,25 @@
-#![feature(allocator_api,try_reserve_kind,sized_type_properties,ptr_internals,core_intrinsics,alloc_layout_extra,unchecked_math)]
-use std::mem;
-use std::collections::TryReserveError;
-use std::mem::SizedTypeProperties;
+#![feature(
+    allocator_api,
+    try_reserve_kind,
+    sized_type_properties,
+    ptr_internals,
+    core_intrinsics,
+    alloc_layout_extra,
+    unchecked_math
+)]
 use std::alloc::AllocError;
+use std::collections::TryReserveError;
 use std::collections::TryReserveErrorKind::CapacityOverflow;
-use std::ptr::Unique;
-use std::ptr::NonNull;
 use std::hint::black_box;
+use std::mem;
+use std::mem::SizedTypeProperties;
+use std::ptr::NonNull;
+use std::ptr::Unique;
 struct LayoutError;
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub struct Alignment(AlignmentEnum);
 #[repr(usize)]
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 enum AlignmentEnum {
     _Align1Shl0 = 1 << 0,
     _Align1Shl1 = 1 << 1,
@@ -71,7 +79,7 @@ pub struct Layout {
     align: Alignment,
 }
 
-impl Alignment{
+impl Alignment {
     #[inline]
     pub const fn new(align: usize) -> Option<Self> {
         if align.is_power_of_two() {
@@ -81,11 +89,10 @@ impl Alignment{
             None
         }
     }
-    pub const fn as_usize(&self)->usize{
-        unsafe { mem::transmute::<Alignment,usize>(*self) }
+    pub const fn as_usize(&self) -> usize {
+        unsafe { mem::transmute::<Alignment, usize>(*self) }
     }
     pub const unsafe fn new_unchecked(align: usize) -> Self {
-
         // SAFETY: By precondition, this must be a power of two, and
         // our variants encompass all possible powers of two.
         unsafe { mem::transmute::<usize, Alignment>(align) }
@@ -95,7 +102,7 @@ impl Alignment{
         unsafe { Alignment::new_unchecked(mem::align_of::<T>()) }
     }
 }
-impl Layout{
+impl Layout {
     #[inline(always)]
     const fn max_size_for_align(align: Alignment) -> usize {
         // (power-of-two implies align != 0.)
@@ -145,17 +152,22 @@ impl Layout{
             // SAFETY: We just checked above that the `array_size` will not
             // exceed `isize::MAX` even when rounded up to the alignment.
             // And `Alignment` guarantees it's a power of two.
-            unsafe { Ok(Layout::from_size_align_unchecked(array_size, align.as_usize())) }
+            unsafe {
+                Ok(Layout::from_size_align_unchecked(
+                    array_size,
+                    align.as_usize(),
+                ))
+            }
         }
     }
-    pub fn test_layout(){
-        unsafe{
-        let mut res = Self::from_size_align_unchecked(0,1024);
-        res.size = 64;
-        //test_eq!(res.size,64);
-        res.align =  Alignment::new_unchecked(1024);
-        //test_eq!(res.align(),1024);
-        //test_eq!(res.size,64);
+    pub fn test_layout() {
+        unsafe {
+            let mut res = Self::from_size_align_unchecked(0, 1024);
+            res.size = 64;
+            //test_eq!(res.size,64);
+            res.align = Alignment::new_unchecked(1024);
+            //test_eq!(res.align(),1024);
+            //test_eq!(res.size,64);
         }
     }
     #[must_use]
@@ -181,9 +193,14 @@ impl Layout{
     #[inline]
     pub const unsafe fn from_size_align_unchecked(size: usize, align: usize) -> Self {
         // SAFETY: the caller is required to uphold the preconditions.
-        unsafe { Layout { size, align: Alignment::new_unchecked(align) } }
+        unsafe {
+            Layout {
+                size,
+                align: Alignment::new_unchecked(align),
+            }
+        }
     }
-    /* 
+    /*
     #[must_use]
     #[inline]
     pub fn for_value<T>(t: &T) -> Self {
@@ -204,14 +221,14 @@ impl Layout{
     }
 }
 #[allow(dead_code)]
-extern "C"{
-    fn puts(msg:*const u8);
-    fn malloc(size:usize)->*mut core::ffi::c_void;
-    fn free(ptr:*mut core::ffi::c_void);
-    fn realloc(ptr:*mut core::ffi::c_void,size:usize)->*mut core::ffi::c_void;
+extern "C" {
+    fn puts(msg: *const u8);
+    fn malloc(size: usize) -> *mut core::ffi::c_void;
+    fn free(ptr: *mut core::ffi::c_void);
+    fn realloc(ptr: *mut core::ffi::c_void, size: usize) -> *mut core::ffi::c_void;
     fn __rust_alloc(size: usize, align: usize) -> *mut u8;
     fn printf(fmt: *const core::ffi::c_char, ...) -> core::ffi::c_int;
-} 
+}
 enum AllocInit {
     /// The contents of the new memory are uninitialized.
     Uninitialized,
@@ -231,35 +248,33 @@ pub(crate) struct RawVec<T> {
     alloc: Allocator,
 }
 impl<T> RawVec<T> {
-
     pub const fn new_in(alloc: Allocator) -> Self {
         // `cap: 0` means "unallocated". zero-sized types are ignored.
-        Self { ptr: Unique::dangling(), cap: 0, alloc }
+        Self {
+            ptr: Unique::dangling(),
+            cap: 0,
+            alloc,
+        }
     }
-    fn try_allocate_in_(
-        capacity: usize,
-    
-        alloc: Allocator,
-    ) -> Result<Self, TryReserveError> {
+    fn try_allocate_in_(capacity: usize, alloc: Allocator) -> Result<Self, TryReserveError> {
         // Don't allocate here because `Drop` will not deallocate when `capacity` is 0.
 
         // We avoid `unwrap_or_else` here because it bloats the amount of
-            // LLVM IR generated.
-            let layout = match Layout::array::<T>(capacity) {
-                Ok(layout) => layout,
-                Err(_) => return Err(CapacityOverflow.into()),
-            };
+        // LLVM IR generated.
+        let layout = match Layout::array::<T>(capacity) {
+            Ok(layout) => layout,
+            Err(_) => return Err(CapacityOverflow.into()),
+        };
 
-            if let Err(err) = alloc_guard(layout.size()) {
-                return Err(err);
-            }
+        if let Err(err) = alloc_guard(layout.size()) {
+            return Err(err);
+        }
 
-            
-            // Allocators currently return a `NonNull<[u8]>` whose length
-            // matches the size requested. If that ever changes, the capacity
-            // here should change to `ptr.len() / mem::size_of::<T>()`.
-            black_box(6);
-            Ok(Self::new_in(alloc))
+        // Allocators currently return a `NonNull<[u8]>` whose length
+        // matches the size requested. If that ever changes, the capacity
+        // here should change to `ptr.len() / mem::size_of::<T>()`.
+        black_box(6);
+        Ok(Self::new_in(alloc))
     }
     fn try_allocate_in(
         capacity: usize,
@@ -295,74 +310,79 @@ impl<T> RawVec<T> {
             // Allocators currently return a `NonNull<[u8]>` whose length
             // matches the size requested. If that ever changes, the capacity
             // here should change to `ptr.len() / mem::size_of::<T>()`.
-            Ok(Self { ptr: Unique::from(ptr.cast()), cap: unsafe { capacity as isize }, alloc })
+            Ok(Self {
+                ptr: Unique::from(ptr.cast()),
+                cap: unsafe { capacity as isize },
+                alloc,
+            })
         }
     }
-    pub fn try_with_capacity_in(capacity: usize, alloc: Allocator) -> Result<Self, TryReserveError> {
+    pub fn try_with_capacity_in(
+        capacity: usize,
+        alloc: Allocator,
+    ) -> Result<Self, TryReserveError> {
         Self::try_allocate_in_(capacity, alloc)
     }
 }
 struct Allocator;
-impl Allocator{
+impl Allocator {
+    #[inline]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        //test_ne!(layout.size(),0);
+        self.alloc_impl(layout, false)
+    }
+    #[inline]
+    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        //test_ne!(layout.size(),0);
+        let mut res = self.alloc_impl(layout, false)?;
+        std::hint::black_box(&mut res);
+        Ok(res)
+    }
+    #[inline]
+    fn alloc_impl(&self, layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
+        //test_ne!(layout.size(),0);
+        match layout.size() {
+            0 => Ok(NonNull::slice_from_raw_parts(layout.dangling(), 0)),
+            // SAFETY: `layout` is non-zero in size,
+            size => unsafe {
+                let raw_ptr = if zeroed {
+                    //Self::alloc_zeroed(self, layout)
+                    core::intrinsics::abort();
+                } else {
+                    Self::alloc(self, layout)
+                };
+                let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
 
-        #[inline]
-        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            //test_ne!(layout.size(),0);
-            self.alloc_impl(layout, false)
+                Ok(NonNull::slice_from_raw_parts(ptr, size))
+            },
         }
-        #[inline]
-        fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            //test_ne!(layout.size(),0);
-            let mut res = self.alloc_impl(layout, false)?;
-            std::hint::black_box(&mut res);
-            Ok(res)
-        }
-        #[inline]
-        fn alloc_impl(&self, layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
-            //test_ne!(layout.size(),0);
-            match layout.size() {
-                0 => Ok(NonNull::slice_from_raw_parts(layout.dangling(), 0)),
-                // SAFETY: `layout` is non-zero in size,
-                size => unsafe {
-                    let raw_ptr = if zeroed {
-                        //Self::alloc_zeroed(self, layout)
-                        core::intrinsics::abort();
-                    } else {
-                        Self::alloc(self, layout)
-                    };
-                    let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-
-                    Ok(NonNull::slice_from_raw_parts(ptr, size))
-                },
-            }
-        }
-        #[inline]
-        unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-            // jemalloc provides alignment less than MIN_ALIGN for small allocations.
-            // So only rely on MIN_ALIGN if size >= align.
-            // Also see <https://github.com/rust-lang/rust/issues/45955> and
-            // <https://github.com/rust-lang/rust/issues/62251#issuecomment-507580914>.
-            let ptr = if layout.align() <= MIN_ALIGN && layout.align() <= layout.size() {
-                let ptr = malloc(layout.size()) as *mut u8;
-                //printf("Malloc retunred ptr: %p\n\0".as_ptr() as *const _,ptr);
-                ptr
-            } else {
-                Self::aligned_malloc(&layout)
-            };
- 
+    }
+    #[inline]
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // jemalloc provides alignment less than MIN_ALIGN for small allocations.
+        // So only rely on MIN_ALIGN if size >= align.
+        // Also see <https://github.com/rust-lang/rust/issues/45955> and
+        // <https://github.com/rust-lang/rust/issues/62251#issuecomment-507580914>.
+        let ptr = if layout.align() <= MIN_ALIGN && layout.align() <= layout.size() {
+            let ptr = malloc(layout.size()) as *mut u8;
+            //printf("Malloc retunred ptr: %p\n\0".as_ptr() as *const _,ptr);
             ptr
-        }
-        #[inline]
-        unsafe fn aligned_malloc(layout: &Layout) -> *mut u8 {
-            // C11 aligned_alloc requires that the size be a multiple of the alignment.
-            // Layout already checks that the size rounded up doesn't overflow isize::MAX.
-            let align = layout.align();
-            let size = layout.size().next_multiple_of(align);
-            __rust_alloc(align, size) as *mut u8
-        }
+        } else {
+            Self::aligned_malloc(&layout)
+        };
 
+        ptr
+    }
+    #[inline]
+    unsafe fn aligned_malloc(layout: &Layout) -> *mut u8 {
+        // C11 aligned_alloc requires that the size be a multiple of the alignment.
+        // Layout already checks that the size rounded up doesn't overflow isize::MAX.
+        let align = layout.align();
+        let size = layout.size().next_multiple_of(align);
+        __rust_alloc(align, size) as *mut u8
+    }
 }
-const MIN_ALIGN:usize = 8;
+const MIN_ALIGN: usize = 8;
 fn alloc_guard(alloc_size: usize) -> Result<(), TryReserveError> {
     if usize::BITS < 64 && alloc_size > isize::MAX as usize {
         Err(CapacityOverflow.into())
@@ -371,7 +391,7 @@ fn alloc_guard(alloc_size: usize) -> Result<(), TryReserveError> {
     }
 }
 
-fn main(){
+fn main() {
     /*let init =  AllocInit::Uninitialized;
     let mut is_zeroed = match init{
         AllocInit::Uninitialized => false,
@@ -383,23 +403,22 @@ fn main(){
         Err(_) => panic!(),
     };
     black_box(layout);*/
-       // Don't allocate here because `Drop` will not deallocate when `capacity` is 0.
+    // Don't allocate here because `Drop` will not deallocate when `capacity` is 0.
 
-        // We avoid `unwrap_or_else` here because it bloats the amount of
-            // LLVM IR generated.
-            let layout = match Layout::array::<i32>(4) {
-                Ok(layout) => layout,
-                Err(_) =>  panic!(),
-            };
-            black_box(layout.size());
-            if let Err(err) = alloc_guard(layout.size()) {
-                panic!();
-            }
+    // We avoid `unwrap_or_else` here because it bloats the amount of
+    // LLVM IR generated.
+    let layout = match Layout::array::<i32>(4) {
+        Ok(layout) => layout,
+        Err(_) => panic!(),
+    };
+    black_box(layout.size());
+    if let Err(err) = alloc_guard(layout.size()) {
+        panic!();
+    }
 
-            
-            // Allocators currently return a `NonNull<[u8]>` whose length
-            // matches the size requested. If that ever changes, the capacity
-            // here should change to `ptr.len() / mem::size_of::<T>()`.
-            black_box(6);
-            let v = RawVec::<u8>::new_in(Allocator);
+    // Allocators currently return a `NonNull<[u8]>` whose length
+    // matches the size requested. If that ever changes, the capacity
+    // here should change to `ptr.len() / mem::size_of::<T>()`.
+    black_box(6);
+    let v = RawVec::<u8>::new_in(Allocator);
 }
