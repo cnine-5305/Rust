@@ -3,5 +3,6 @@
 #![no_std]
 include!("../common.rs");
 fn main(){
-    let mut strig = unsafe{str::from_utf8_unchecked(slice::from_raw_parts(malloc(64) as *mut _,64))};
+    let strig = unsafe{core::str::from_utf8_unchecked(core::slice::from_raw_parts(malloc(64) as *mut _,64))};
+    black_box(strig);
 }
