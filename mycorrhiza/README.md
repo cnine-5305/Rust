@@ -1,5 +1,5 @@
 # Mycorrhiza - Rust/.NET interop layer
-Mycorrhiza is a part of the `rustc_codegen_clr` project, and it is responsible for allowing Rust code to call .NET functions and facilitates interacting with managed objects. In the future, it will include an inter-op guide, and some safe abstractions, to help with development of Rust applications targeting .NET.
+Mycorrhiza is a part of the `Rust` project, and it is responsible for allowing Rust code to call .NET functions and facilitates interacting with managed objects. In the future, it will include an inter-op guide, and some safe abstractions, to help with development of Rust applications targeting .NET.
 It is heavily WIP, and not yet recommended for general use.
 # Examples:
 ## Hello World using StringBuilder and Console:

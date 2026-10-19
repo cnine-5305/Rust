@@ -1,9 +1,9 @@
-# rustc_codegen_clr 
+# Rust
 
 > [!WARNING]
 > This project is still early in its developement. Bugs, crashes and miscompilations are expected. DO NOT USE IT FOR ANYTHING SERIOUS.
 
-`rustc_codegen_clr` is an experimental Rust compiler backend(plugin), which allows you to transpile Rust into .NET assemblies, or C source files. 
+`Rust` is an experimental Rust compiler backend(plugin), which allows you to transpile Rust into .NET assemblies, or C source files. 
 
 The end goal of the project is allowing Rust to be used in places where it could not be used before. 
 
@@ -110,7 +110,7 @@ C
 
 ### Q: Compatibility?
 
-**A**: *`rustc_codegen_clr` is only tested on Linux x86_64, with the CoreCLR runtime (more commonly known as simply the .NET runtime), on .NET 8. It should work on other platforms, but it is not guaranteed.*
+**A**: *`Rust` is only tested on Linux x86_64, with the CoreCLR runtime (more commonly known as simply the .NET runtime), on .NET 8. It should work on other platforms, but it is not guaranteed.*
 
 ### Q: What about Mono?
 
@@ -124,4 +124,4 @@ C
 
 ## Licensing
 
-`rustc_codegen_clr` is dual licensed under MIT license or Apache License, Version 2.0.
+`Rust` is dual licensed under MIT license or Apache License, Version 2.0.

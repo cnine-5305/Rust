@@ -7,7 +7,7 @@
 1. After finding a broken test, extract it into a spearte crate.
 2. Build the crate into native Rust using `cargo test` and check that it behaves as expcted. 
 3. IMPORTANT! Clean the build cache using `cargo clean`. NEVER skip this step, beacause it can lead to suprising results which may hide the real issue.
-4. Build the crate using `rustc_codegen_clr` and observe the incorrect results. 
+4. Build the crate using `Rust` and observe the incorrect results. 
 5. Make a small change by removing \ simplifing some code in your example.
 6. Clean the build cache using `cargo clean` again before rebuilding to prevent issues. DO NOT SKIP THS STEP.
 7. Repeat steps 2-7 untill the test program can no longer be simplified.
